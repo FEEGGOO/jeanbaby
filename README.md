@@ -1,6 +1,6 @@
 # Jean Baby 🍼
 **E-Commerce Platform for Baby Products | Rwanda**
-> CAT-23708/2024
+> EXAM-28524/2025
 
 A full-stack e-commerce web application for buying and selling premium baby products online, built for the Rwandan market.
 
