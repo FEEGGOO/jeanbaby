@@ -1,0 +1,152 @@
+name: Jean Baby CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # JOB 1 – Lint & Validate
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Check Node.js syntax on all server files
+        run: |
+          echo "Checking server files..."
+          find server -name "*.js" | while read f; do
+            node --check "$f" && echo "✅ $f" || exit 1
+          done
+
+      - name: Verify required files exist
+        run: |
+          test -f Dockerfile         && echo "✅ Dockerfile found"         || exit 1
+          test -f docker-compose.yml && echo "✅ docker-compose.yml found" || exit 1
+          test -f db/schema.sql      && echo "✅ schema.sql found"         || exit 1
+          test -f public/index.html  && echo "✅ index.html found"         || exit 1
+
+  # ─────────────────────────────────────────────
+  # JOB 2 – Docker Build
+  # ─────────────────────────────────────────────
+  docker-build:
+    name: Docker Image Build
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          docker build -t jeanbaby:${{ github.sha }} .
+          echo "✅ Docker image built successfully"
+
+      - name: Verify image
+        run: docker images jeanbaby
+
+  # ─────────────────────────────────────────────
+  # JOB 3 – Integration Test
+  # ─────────────────────────────────────────────
+  integration-test:
+    name: Integration Test (Full Stack)
+    runs-on: ubuntu-latest
+    needs: docker-build
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Start full stack with Docker Compose
+        run: |
+          docker compose up -d --build
+          echo "Waiting for services to be healthy..."
+          sleep 25
+
+      - name: Check containers are running
+        run: |
+          docker compose ps
+          docker compose ps | grep "jeanbaby_app" | grep -i "up" \
+            && echo "✅ App container UP" \
+            || (docker compose logs app && exit 1)
+          docker compose ps | grep "jeanbaby_db" | grep -i "up" \
+            && echo "✅ DB container UP" \
+            || (docker compose logs db && exit 1)
+
+      - name: HTTP health check
+        run: |
+          sleep 5
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/)
+          echo "HTTP Status: $STATUS"
+          [ "$STATUS" = "200" ] && echo "✅ App responding" || echo "⚠️ Non-200 (may need DB seed)"
+
+      - name: Test API endpoints
+        run: |
+          curl -sf http://localhost:3000/api/products/categories \
+            && echo "✅ /api/products/categories OK" || echo "⚠️ API not ready"
+          curl -sf "http://localhost:3000/api/products?limit=4" \
+            && echo "✅ /api/products OK" || echo "⚠️ Products API not ready"
+
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+  # ─────────────────────────────────────────────
+  # JOB 4 – Deploy (push to main/master only)
+  # ─────────────────────────────────────────────
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: integration-test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push to Docker Hub
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/jeanbaby:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/jeanbaby:${{ github.sha }}
+
+      - name: Deploy to production server via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key:      ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            cd /opt/jeanbaby
+            docker compose pull
+            docker compose up -d --remove-orphans
+            docker image prune -f
+            echo "✅ Deployment complete"

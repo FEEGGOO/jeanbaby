@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  # ── Node.js Application ───────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jeanbaby_app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_USER: jeanbaby_user
+      DB_PASSWORD: jeanbaby_pass
+      DB_NAME: jeanbaby
+      SESSION_SECRET: jeanbaby_prod_secret_2024
+    volumes:
+      - ./public/uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - jeanbaby_net
+
+  # ── MySQL 8 Database ──────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: jeanbaby_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: jeanbaby
+      MYSQL_USER: jeanbaby_user
+      MYSQL_PASSWORD: jeanbaby_pass
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=rootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - jeanbaby_net
+
+  # ── phpMyAdmin (dev only) ─────────────────────────────────────
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: jeanbaby_pma
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_USER: jeanbaby_user
+      PMA_PASSWORD: jeanbaby_pass
+    depends_on:
+      - db
+    networks:
+      - jeanbaby_net
+
+volumes:
+  db_data:
+
+networks:
+  jeanbaby_net:
+    driver: bridge
