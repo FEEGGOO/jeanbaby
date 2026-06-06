@@ -1,138 +1,85 @@
-# Jean Baby 🍼
-**E-Commerce Platform for Baby Products | Rwanda**
-> EXAM-28524/2025
+# Jean Baby
 
-A full-stack e-commerce web application for buying and selling premium baby products online, built for the Rwandan market.
+An e-commerce web application for buying and selling baby products online, built for the Rwandan market as part of the EXAM-28524/2025 project.
 
----
+## About the Project
 
-## 🚀 Tech Stack
+Jean Baby is an online marketplace where parents in Rwanda can browse and purchase premium baby products including clothing, feeding essentials, toys, and safety items. Sellers can manage their products and track orders through a dedicated dashboard.
 
-| Layer      | Technology              |
-|------------|-------------------------|
-| Frontend   | HTML5, CSS3, Vanilla JS (SPA) |
-| Backend    | Node.js + Express.js    |
-| Database   | MySQL 8                 |
-| Auth       | express-session + bcryptjs |
-| Container  | Docker + Docker Compose |
-| CI/CD      | GitHub Actions          |
+## Technologies Used
 
----
+- **Frontend:** HTML5, CSS3, JavaScript (Single Page Application)
+- **Backend:** Node.js with Express.js
+- **Database:** MySQL 8
+- **Authentication:** express-session with bcryptjs password hashing
+- **Containerization:** Docker and Docker Compose
+- **CI/CD:** GitHub Actions
 
-## 📋 Features
+## Features
 
-- 🛍️ Product listing with search and category filtering
-- 📄 Product detail pages with quantity selector
-- 🛒 Shopping cart (add, update, remove)
-- 📦 Checkout with delivery details + payment method
-- ✅ Order confirmation page with order reference
-- 📋 Order history and tracking
-- 👤 Role-based auth (Buyer / Seller)
-- 📊 Seller dashboard with metrics, product CRUD, order management
-- 🐳 Fully containerised with Docker
-- 🔄 Automated CI/CD with GitHub Actions
+- Browse products by category with search functionality
+- Product detail pages with quantity selection
+- Shopping cart with add, remove and update quantity
+- Checkout with delivery address and payment method
+- Order confirmation with reference number
+- Order history and status tracking
+- Buyer and Seller role-based access
+- Seller dashboard with sales metrics, product and order management
+- Fully containerized with Docker for consistent deployment
+- Automated testing and deployment via GitHub Actions pipeline
 
----
-
-## 🛠️ Local Development
-
-### Prerequisites
-- Node.js 20+
-- MySQL 8
-- Docker (optional but recommended)
-
-### Option A – Docker (Recommended)
-```bash
-# Clone the repo
-git clone https://github.com/<your-username>/jeanbaby.git
-cd jeanbaby
-
-# Start all services
-docker compose up -d
-
-# App: http://localhost:3000
-# phpMyAdmin: http://localhost:8081
-```
-
-### Option B – Manual
-```bash
-# Install dependencies
-npm install
-
-# Create .env from template
-cp .env.example .env
-# Edit .env with your MySQL credentials
-
-# Import database
-mysql -u root -p < db/schema.sql
-
-# Start development server
-npm run dev
-
-# App: http://localhost:3000
-```
-
----
-
-## 🗄️ Database
-
-The `db/schema.sql` file creates all tables and seeds demo data.
-
-**Demo accounts** (password: `password123`):
-- Buyer: `buyer@jeanbaby.rw`
-- Seller: `seller@jeanbaby.rw`
-
----
-
-## 🔑 GitHub Secrets Required for Deployment
-
-| Secret              | Description                    |
-|---------------------|--------------------------------|
-| `DOCKERHUB_USERNAME`| Docker Hub username            |
-| `DOCKERHUB_TOKEN`   | Docker Hub access token        |
-| `DEPLOY_HOST`       | Production server IP/hostname  |
-| `DEPLOY_USER`       | SSH username                   |
-| `DEPLOY_SSH_KEY`    | SSH private key                |
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 jeanbaby/
 ├── server/
-│   ├── index.js          # Express entry point
-│   ├── db.js             # MySQL connection pool
+│   ├── index.js          # Main server entry point
+│   ├── db.js             # Database connection
 │   ├── middleware/
-│   │   └── auth.js       # requireAuth, requireSeller
+│   │   └── auth.js       # Authentication middleware
 │   └── routes/
-│       ├── auth.js       # Register, Login, Logout
-│       ├── products.js   # Product listing & details
-│       ├── cart.js       # Cart CRUD
-│       ├── orders.js     # Place & view orders
-│       └── seller.js     # Seller dashboard APIs
+│       ├── auth.js       # Login and registration
+│       ├── products.js   # Product browsing
+│       ├── cart.js       # Cart management
+│       ├── orders.js     # Order placement and history
+│       └── seller.js     # Seller dashboard
 ├── public/
-│   ├── index.html        # Single Page App shell
-│   ├── css/style.css     # Jean Baby design system
-│   ├── js/app.js         # SPA router + all page logic
-│   └── uploads/          # Product images
+│   ├── index.html        # Main HTML page
+│   ├── css/style.css     # Stylesheet
+│   └── js/app.js         # Frontend logic
 ├── db/
-│   └── schema.sql        # MySQL schema + seed data
+│   └── schema.sql        # Database schema and seed data
 ├── .github/workflows/
-│   └── ci-cd.yml         # GitHub Actions pipeline
+│   └── ci-cd.yml         # CI/CD pipeline
 ├── Dockerfile
 ├── docker-compose.yml
 └── package.json
 ```
 
----
+## How to Run
 
-## 🌐 Live Demo
+Make sure Docker Desktop is installed and running, then:
 
-**URL:** https://jeanbaby.onrender.com *(update with your deployment URL)*
+```bash
+git clone https://github.com/FEEGGOO/jeanbaby.git
+cd jeanbaby
+docker compose up -d
+```
 
----
+Open your browser and go to: **http://localhost:3000**
 
-## 📝 License
+## Live Application
 
-Built Final — Exam-28524/2025.
+**URL:** https://jeanbaby-production.up.railway.app
+
+## Database
+
+The database is automatically created when you run Docker Compose. The schema file at `db/schema.sql` creates all the necessary tables and inserts sample products and categories.
+
+## CI/CD Pipeline
+
+The GitHub Actions pipeline runs automatically on every push to the main branch. It performs syntax checking, builds the Docker image, runs an integration test by spinning up the full stack, and deploys to the production server.
+
+## Author
+
+**FEEGGOO** — EXAM-28524/2025
