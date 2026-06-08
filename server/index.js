@@ -29,6 +29,7 @@ app.use('/api/products', require('./routes/products'));
 app.use('/api/cart',     require('./routes/cart'));
 app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/seller',   require('./routes/seller'));
+app.use('/setup',        require('./routes/setup'));
 
 // ── SPA fallback – serve index.html for all non-API routes ────────
 app.get('*', (req, res) => {
