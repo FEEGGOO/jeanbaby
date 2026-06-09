@@ -159,7 +159,7 @@ router.get('/', async (req, res) => {
 // Fix broken product images
 router.get('/fix-images', async (req, res) => {
   try {
-    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1563453392212-326f5e854473?w=600&q=80' WHERE name='Silicone Bib Set (3-pack)'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80' WHERE name='Silicone Bib Set (3-pack)'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&q=80' WHERE name='Anti-Colic Feeding Bottle'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80' WHERE name='Bamboo Sleep Sack'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' WHERE name='Organic Cotton Onesie'`);
