@@ -6,6 +6,9 @@ const fs      = require('fs');
 
 const app = express();
 
+// Setup route MUST come before static files
+app.use('/setup',        require('./routes/setup'));
+
 // ── Middleware ────────────────────────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
