@@ -117,7 +117,7 @@ router.get('/', async (req, res) => {
       [seller.id, catMap['Clothing'], 'Organic Cotton Onesie',     'Ultra-soft certified organic cotton onesie for 0-3 months.',      4500, 25, 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=600&q=80'],
       [seller.id, catMap['Sleep'],    'Bamboo Sleep Sack',          'Temperature-regulating bamboo sleep sack with smooth zip.',       8900, 15, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
       [seller.id, catMap['Feeding'],  'Anti-Colic Feeding Bottle',  '260ml wide-neck bottle with soft silicone nipple.',               5200, 40, 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&q=80'],
-      [seller.id, catMap['Feeding'],  'Silicone Bib Set (3-pack)',  'Waterproof dishwasher-safe silicone bibs.',                       2800, 30, 'https://images.unsplash.com/photo-1590737976076-ad1e4c291cec?w=600&q=80'],
+      [seller.id, catMap['Feeding'],  'Silicone Bib Set (3-pack)',  'Waterproof dishwasher-safe silicone bibs.',                       2800, 30, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
       [seller.id, catMap['Toys'],     'Sensory Activity Cube',      'Six-sided wooden activity cube with shapes and mirrors.',        12500, 10, 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=600&q=80'],
       [seller.id, catMap['Toys'],     'Wooden Stacking Rings',      'FSC-certified beechwood stacking rings in pastel colours.',       6700, 20, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
       [seller.id, catMap['Safety'],   'Baby Monitor Pro',           '1080p HD baby monitor with night vision and two-way audio.',     24000,  8, 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=600&q=80'],
@@ -156,4 +156,20 @@ router.get('/', async (req, res) => {
   }
 });
 
-module.exports = router;
+// Fix broken product images
+router.get('/fix-images', async (req, res) => {
+  try {
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1563453392212-326f5e854473?w=600&q=80' WHERE name='Silicone Bib Set (3-pack)'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&q=80' WHERE name='Anti-Colic Feeding Bottle'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80' WHERE name='Bamboo Sleep Sack'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' WHERE name='Organic Cotton Onesie'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=600&q=80' WHERE name='Sensory Activity Cube'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&q=80' WHERE name='Wooden Stacking Rings'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=600&q=80' WHERE name='Baby Monitor Pro'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80' WHERE name='Digital Ear Thermometer'`);
+    res.send('<h1 style="color:green">✅ Images fixed! <a href="/">Go to App</a></h1>');
+  } catch(e) {
+    res.status(500).send(`<pre style="color:red">${e.message}</pre>`);
+  }
+});
+
