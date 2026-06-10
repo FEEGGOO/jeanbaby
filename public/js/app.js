@@ -84,8 +84,20 @@ function showPage(id) {
 
 function updateNavActiveState(id) {
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(l => l.classList.remove('active'));
   const map = { home: 'nav-home', products: 'nav-products', about: 'nav-about', contact: 'nav-contact' };
+  const bmap = { home: 'bnav-home', products: 'bnav-products', cart: 'bnav-cart', orders: 'bnav-orders' };
   if (map[id]) document.getElementById(map[id])?.classList.add('active');
+  if (bmap[id]) document.getElementById(bmap[id])?.classList.add('active');
+}
+
+function handleAccountNav() {
+  if (App.user) {
+    if (App.user.role === 'seller') navigate('/seller');
+    else navigate('/orders');
+  } else {
+    navigate('/login');
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -134,7 +146,12 @@ function renderNavAuth() {
 }
 
 async function updateCartCount() {
-  if (!App.user) { document.getElementById('cart-badge').textContent = '0'; document.getElementById('cart-badge').style.display = 'none'; return; }
+  if (!App.user) {
+    document.getElementById('cart-badge').style.display = 'none';
+    const b = document.getElementById('bnav-cart-badge');
+    if(b) b.style.display = 'none';
+    return;
+  }
   try {
     const items = await api('GET', '/api/cart');
     const total = items.reduce((s, i) => s + i.quantity, 0);
@@ -142,6 +159,11 @@ async function updateCartCount() {
     const badge = document.getElementById('cart-badge');
     badge.textContent = total;
     badge.style.display = total > 0 ? 'flex' : 'none';
+    const bnavBadge = document.getElementById('bnav-cart-badge');
+    if (bnavBadge) {
+      bnavBadge.textContent = total;
+      bnavBadge.style.display = total > 0 ? 'flex' : 'none';
+    }
   } catch {}
 }
 
