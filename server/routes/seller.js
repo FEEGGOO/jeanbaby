@@ -31,19 +31,27 @@ router.get('/products', requireSeller, async (req, res) => {
 });
 
 router.post('/products', requireSeller, upload.single('image'), async (req, res) => {
-  const { name, description, price, stock, category_id } = req.body;
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  const { name, description, price, stock, category_id, image_url } = req.body;
+  // Use URL if provided, otherwise use uploaded file
+  const finalImage = image_url && image_url.trim() !== '' 
+    ? image_url.trim() 
+    : (req.file ? `/uploads/${req.file.filename}` : null);
   const [result] = await db.query(
     'INSERT INTO products (seller_id,category_id,name,description,price,stock,image_url) VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING id',
-    [req.session.user.id, category_id||null, name, description, price, stock, image_url]);
+    [req.session.user.id, category_id||null, name, description, price, stock, finalImage]);
   res.json({ id: result[0].id });
 });
 
 router.put('/products/:id', requireSeller, upload.single('image'), async (req, res) => {
-  const { name, description, price, stock, category_id } = req.body;
+  const { name, description, price, stock, category_id, image_url } = req.body;
   let q = 'UPDATE products SET name=$1,description=$2,price=$3,stock=$4,category_id=$5';
   const params = [name, description, price, stock, category_id||null];
-  if (req.file) { q += `,image_url=$${params.length+1}`; params.push(`/uploads/${req.file.filename}`); }
+  // Priority: URL input > uploaded file > keep existing
+  if (image_url && image_url.trim() !== '') {
+    q += `,image_url=$${params.length+1}`; params.push(image_url.trim());
+  } else if (req.file) {
+    q += `,image_url=$${params.length+1}`; params.push(`/uploads/${req.file.filename}`);
+  }
   q += ` WHERE id=$${params.length+1} AND seller_id=$${params.length+2}`;
   params.push(req.params.id, req.session.user.id);
   await db.query(q, params);
