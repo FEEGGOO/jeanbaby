@@ -50,18 +50,19 @@ function toast(msg, type = 'success') {
 //  ROUTER
 // ═══════════════════════════════════════════════
 const routes = {
-  '/'            : showHome,
-  '/products'    : showProducts,
-  '/product'     : showProductDetail,
-  '/cart'        : showCart,
-  '/checkout'    : showCheckout,
-  '/confirmation': showConfirmation,
-  '/orders'      : showOrders,
-  '/login'       : showLogin,
-  '/register'    : showRegister,
-  '/about'       : showAbout,
-  '/contact'     : showContact,
-  '/seller'      : showSeller,
+  '/'             : showHome,
+  '/products'     : showProducts,
+  '/product'      : showProductDetail,
+  '/cart'         : showCart,
+  '/checkout'     : showCheckout,
+  '/confirmation' : showConfirmation,
+  '/orders'       : showOrders,
+  '/login'        : showLogin,
+  '/register'     : showRegister,
+  '/about'        : showAbout,
+  '/contact'      : showContact,
+  '/seller'       : showSeller,
+  '/payment'      : showPaymentResult,
 };
 
 function navigate(path, pushState = true) {
@@ -423,15 +424,38 @@ async function submitOrder() {
   const address = document.getElementById('sh-address').value.trim();
   const notes   = document.getElementById('sh-notes').value.trim();
   const payment = document.querySelector('input[name="payment"]:checked')?.value || 'cash_on_delivery';
+
   if (!name || !phone || !address) { toast('Please fill in all required fields', 'error'); return; }
+
+  const btn = document.getElementById('checkout-submit-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing...'; }
+
   try {
+    // Step 1 — Create the order in our database
     const { order_id } = await api('POST', '/api/orders', {
-      shipping_name: name, shipping_phone: phone, shipping_address: address,
-      notes, payment_method: payment
+      shipping_name: name, shipping_phone: phone,
+      shipping_address: address, notes, payment_method: payment
     });
     await updateCartCount();
+
+    // Step 2 — If PesaPal selected, redirect to payment page
+    if (payment === 'pesapal') {
+      toast('Redirecting to PesaPal secure payment...', 'info');
+      const data = await api('POST', '/api/payment/initiate', { order_id });
+      // Redirect browser to PesaPal payment page
+      window.location.href = data.redirect_url;
+      return;
+    }
+
+    // Cash on Delivery — go to confirmation
     navigate('/confirmation?id=' + order_id);
-  } catch(e) { toast(e.message || 'Order failed', 'error'); }
+  } catch(e) {
+    toast(e.message || 'Order failed. Please try again.', 'error');
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = payment === 'pesapal' ? '💳 Pay with PesaPal →' : '✅ Confirm Order & Pay';
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -457,6 +481,45 @@ async function showConfirmation(path) {
       </div>`).join('');
     document.getElementById('conf-total').textContent = fmtPrice(order.total_amount);
   } catch(e) { navigate('/orders'); }
+}
+
+// ═══════════════════════════════════════════════
+//  PAYMENT RESULT — PesaPal callback handler
+// ═══════════════════════════════════════════════
+async function showPaymentResult(path) {
+  const params        = new URLSearchParams(path.split('?')[1] || '');
+  const order_id      = params.get('order_id');
+  const trackingId    = params.get('OrderTrackingId') || params.get('orderTrackingId');
+  const merchantRef   = params.get('OrderMerchantReference');
+
+  if (!order_id && !merchantRef) { navigate('/orders'); return; }
+
+  // Resolve order_id from merchant reference if needed
+  let resolvedOrderId = order_id;
+  if (!resolvedOrderId && merchantRef) {
+    resolvedOrderId = merchantRef.split('-')[1];
+  }
+
+  showPage('confirmation');
+  try {
+    // Check payment status with PesaPal
+    let statusUrl = `/api/payment/status/${resolvedOrderId}`;
+    if (trackingId) statusUrl += `?order_tracking_id=${trackingId}`;
+    const statusData = await api('GET', statusUrl);
+
+    const isPaid = statusData.status === 'completed';
+    if (isPaid) {
+      toast('✅ Payment confirmed! Thank you.', 'success');
+    } else if (statusData.status === 'failed' || statusData.status === 'invalid') {
+      toast('❌ Payment failed. Please try again or choose Cash on Delivery.', 'error');
+    } else {
+      toast('⏳ Payment is being processed...', 'info');
+    }
+    // Load the order details onto the confirmation page
+    await showConfirmation(`/confirmation?id=${resolvedOrderId}`);
+  } catch(e) {
+    navigate('/orders');
+  }
 }
 
 // ═══════════════════════════════════════════════

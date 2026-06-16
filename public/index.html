@@ -265,18 +265,40 @@
         <!-- Payment -->
         <div class="checkout-card">
           <h3>💳 Payment Method</h3>
+
+          <!-- Cash on Delivery -->
           <label class="payment-option selected" id="pay-cod" onclick="selectPayment('cash_on_delivery',this)">
             <input type="radio" name="payment" value="cash_on_delivery" checked>
             <span class="payment-icon">💵</span>
-            <div><div class="payment-label">Cash on Delivery</div><div class="payment-sub">Pay when your order arrives</div></div>
+            <div>
+              <div class="payment-label">Cash on Delivery</div>
+              <div class="payment-sub">Pay in cash when your order arrives</div>
+            </div>
           </label>
-          <label class="payment-option" id="pay-momo" onclick="selectPayment('momo',this)">
-            <input type="radio" name="payment" value="momo">
-            <span class="payment-icon">📱</span>
-            <div><div class="payment-label">MTN Mobile Money</div><div class="payment-sub">Pay via MoMo (coming soon)</div></div>
+
+          <!-- PesaPal -->
+          <label class="payment-option" id="pay-pesapal" onclick="selectPayment('pesapal',this)">
+            <input type="radio" name="payment" value="pesapal">
+            <span class="payment-icon">💳</span>
+            <div>
+              <div class="payment-label">Pay Online via PesaPal</div>
+              <div class="payment-sub">Visa · Mastercard · Mobile Money · Bank Transfer</div>
+            </div>
           </label>
+
+          <!-- PesaPal info (shown when pesapal selected) -->
+          <div id="pesapal-info" style="display:none;margin-top:8px;padding:12px;background:#fdf2f8;border-radius:10px;border:1px solid #fce7f3">
+            <div style="font-size:13px;font-weight:700;color:var(--pink-dark);margin-bottom:4px">✅ Secure Online Payment</div>
+            <div style="font-size:12px;color:var(--mid)">You will be redirected to PesaPal's secure payment page to complete your payment. Supports Visa, Mastercard, MTN MoMo, Airtel Money and bank transfer.</div>
+          </div>
+
+          <!-- Security badge -->
+          <div style="display:flex;align-items:center;gap:8px;margin-top:12px;padding:10px;background:#f0fdf4;border-radius:10px;">
+            <span style="font-size:18px">🔒</span>
+            <span style="font-size:12px;color:#166534">All payments are 256-bit SSL encrypted. Powered by PesaPal — trusted across Africa.</span>
+          </div>
         </div>
-        <button class="btn btn-pink btn-lg btn-block lg:hidden" onclick="submitOrder()">✅ Confirm Order & Pay</button>
+        <button class="btn btn-pink btn-lg btn-block" style="margin-bottom:16px" id="checkout-submit-btn" onclick="submitOrder()">✅ Confirm Order & Pay</button>
       </div>
       <!-- Summary -->
       <div class="summary-card" style="top:80px;position:sticky">
@@ -286,7 +308,7 @@
         <div class="summary-row"><span>Delivery fee</span><span>2,000 RWF</span></div>
         <div class="summary-total"><span>Total</span><span id="checkout-total">0 RWF</span></div>
         <button class="btn btn-pink btn-lg btn-block" style="margin-top:20px" onclick="submitOrder()">✅ Confirm Order & Pay</button>
-        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--light)">🔒 Secure checkout · Your data is protected</div>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--light)">🔒 Secure checkout · Powered by PesaPal</div>
       </div>
     </div>
   </div>
@@ -295,6 +317,10 @@
 function selectPayment(val, el) {
   document.querySelectorAll('.payment-option').forEach(o => o.classList.remove('selected'));
   el.classList.add('selected');
+  const info = document.getElementById('pesapal-info');
+  if (info) info.style.display = val === 'pesapal' ? 'block' : 'none';
+  const btn = document.getElementById('checkout-submit-btn');
+  if (btn) btn.textContent = val === 'pesapal' ? '💳 Pay with PesaPal →' : '✅ Confirm Order & Pay';
 }
 </script>
 
