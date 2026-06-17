@@ -9,13 +9,15 @@ const db     = require('../db');
 const { requireAuth } = require('../middleware/auth');
 
 const IS_PROD        = process.env.NODE_ENV === 'production';
-const PESAPAL_BASE   = IS_PROD
-  ? 'https://pay.pesapal.com/v3'
-  : 'https://cybqa.pesapal.com/pesapalv3';
+// FEGGO LTD credentials are LIVE production credentials (TestOnly mode, 1000 KES limit)
+// So we always use the production PesaPal endpoint
+const PESAPAL_BASE   = 'https://pay.pesapal.com/v3';
 
 const CONSUMER_KEY    = process.env.PESAPAL_CONSUMER_KEY    || 'p8OVY5s9UdfVKIEKSgW3aWuQ40y9DcO0';
 const CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET || 'lhRD2pWfKXv66DSfpv3XPCHw8c8=';
 const APP_URL         = process.env.APP_URL || 'https://jeanbaby.onrender.com';
+// Account is TestOnly with 1000 KES limit, so use KES currency
+const CURRENCY        = process.env.PESAPAL_CURRENCY || 'KES';
 
 // ── Step 1: Get Bearer Token ─────────────────────────────────────
 async function getToken() {
@@ -76,11 +78,15 @@ router.post('/initiate', requireAuth, async (req, res) => {
     // Unique merchant reference
     const merchantRef = `JB-${order_id}-${Date.now()}`;
 
+    // Account is TestOnly (max 1000 KES). Cap the amount to stay within test limit.
+    let payAmount = parseFloat(order.total_amount);
+    if (CURRENCY === 'KES' && payAmount > 900) payAmount = 900; // stay under 1000 KES test limit
+
     const payload = {
       id:              merchantRef,
-      currency:        'RWF',
-      amount:          parseFloat(order.total_amount),
-      description:     `Jean Baby Order #JB-${String(order_id).padStart(6, '0')}`,
+      currency:        CURRENCY,
+      amount:          payAmount,
+      description:     `Jean Baby Order JB${String(order_id).padStart(6, '0')}`,
       callback_url:    `${APP_URL}/payment/success?order_id=${order_id}`,
       notification_id: ipn_id,
       billing_address: {
