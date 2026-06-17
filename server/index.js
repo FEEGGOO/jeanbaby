@@ -6,19 +6,11 @@ const fs      = require('fs');
 
 const app = express();
 
-// Setup route MUST come before static files
-app.use('/setup',        require('./routes/setup'));
-
-// ── Middleware ────────────────────────────────────────────────────
+// ── Body parsers (must come first) ────────────────────────────────
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(express.static(path.join(__dirname, '../public')));
 
-// Uploads folder
-const uploadDir = path.join(__dirname, '../public/uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-// Session
+// ── Session (MUST come before any routes that use req.session) ────
 app.use(session({
   secret: process.env.SESSION_SECRET || 'jeanbaby_secret',
   resave: false,
@@ -26,13 +18,21 @@ app.use(session({
   cookie: { maxAge: 24 * 60 * 60 * 1000 } // 1 day
 }));
 
-// ── Routes ────────────────────────────────────────────────────────
+// ── Uploads folder ────────────────────────────────────────────────
+const uploadDir = path.join(__dirname, '../public/uploads');
+if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+
+// ── API Routes (must come BEFORE static files & SPA fallback) ─────
 app.use('/api/auth',     require('./routes/auth'));
 app.use('/api/products', require('./routes/products'));
 app.use('/api/cart',     require('./routes/cart'));
 app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/seller',   require('./routes/seller'));
+app.use('/api/payment',  require('./routes/payment'));
 app.use('/setup',        require('./routes/setup'));
+
+// ── Static files ──────────────────────────────────────────────────
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ── SPA fallback – serve index.html for all non-API routes ────────
 app.get('*', (req, res) => {
