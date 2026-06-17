@@ -19,12 +19,14 @@ const APP_URL         = process.env.APP_URL || 'https://jeanbaby.onrender.com';
 
 // ── Step 1: Get Bearer Token ─────────────────────────────────────
 async function getToken() {
+  console.log('PesaPal: requesting token from', PESAPAL_BASE);
   const res  = await fetch(`${PESAPAL_BASE}/api/Auth/RequestToken`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
     body: JSON.stringify({ consumer_key: CONSUMER_KEY, consumer_secret: CONSUMER_SECRET })
   });
   const data = await res.json();
+  console.log('PesaPal token response:', JSON.stringify(data));
   if (!data.token) throw new Error('PesaPal auth failed: ' + JSON.stringify(data));
   return data.token;
 }
@@ -100,6 +102,7 @@ router.post('/initiate', requireAuth, async (req, res) => {
       body: JSON.stringify(payload)
     });
     const submitData = await submitRes.json();
+    console.log('PesaPal submit response:', JSON.stringify(submitData));
 
     if (!submitData.redirect_url) {
       throw new Error('PesaPal submit failed: ' + JSON.stringify(submitData));
