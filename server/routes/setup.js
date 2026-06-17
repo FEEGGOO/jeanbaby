@@ -115,11 +115,11 @@ router.get('/', async (req, res) => {
     // Seed products
     const products = [
       [seller.id, catMap['Clothing'], 'Organic Cotton Onesie',     'Ultra-soft certified organic cotton onesie for 0-3 months.',      4500, 25, 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=600&q=80'],
-      [seller.id, catMap['Sleep'],    'Bamboo Sleep Sack',          'Temperature-regulating bamboo sleep sack with smooth zip.',       8900, 15, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
+      [seller.id, catMap['Sleep'],    'Bamboo Sleep Sack',          'Temperature-regulating bamboo sleep sack with smooth zip.',       8900, 15, 'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600&q=80'],
       [seller.id, catMap['Feeding'],  'Anti-Colic Feeding Bottle',  '260ml wide-neck bottle with soft silicone nipple.',               5200, 40, 'https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&q=80'],
-      [seller.id, catMap['Feeding'],  'Silicone Bib Set (3-pack)',  'Waterproof dishwasher-safe silicone bibs.',                       2800, 30, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
+      [seller.id, catMap['Feeding'],  'Silicone Bib Set (3-pack)',  'Waterproof dishwasher-safe silicone bibs.',                       2800, 30, 'https://images.unsplash.com/photo-1612533752748-e8bf9efafdf2?w=600&q=80'],
       [seller.id, catMap['Toys'],     'Sensory Activity Cube',      'Six-sided wooden activity cube with shapes and mirrors.',        12500, 10, 'https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=600&q=80'],
-      [seller.id, catMap['Toys'],     'Wooden Stacking Rings',      'FSC-certified beechwood stacking rings in pastel colours.',       6700, 20, 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80'],
+      [seller.id, catMap['Toys'],     'Wooden Stacking Rings',      'FSC-certified beechwood stacking rings in pastel colours.',       6700, 20, 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&q=80'],
       [seller.id, catMap['Safety'],   'Baby Monitor Pro',           '1080p HD baby monitor with night vision and two-way audio.',     24000,  8, 'https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=600&q=80'],
       [seller.id, catMap['Safety'],   'Digital Ear Thermometer',    'Accurate reading in 1 second. Stores 20 readings.',               7500, 22, 'https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80'],
     ];
@@ -130,6 +130,12 @@ router.get('/', async (req, res) => {
       );
     }
 
+    // Add payment columns if they don't exist (migration for existing databases)
+    try {
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_ref VARCHAR(255) DEFAULT NULL`);
+      await db.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_tracking_id VARCHAR(255) DEFAULT NULL`);
+    } catch(e) { console.log('Payment columns already exist or migration skipped:', e.message); }
+
     res.send(`
       <html><body style="font-family:sans-serif;padding:40px;background:#f0fdf4">
       <h1 style="color:#16a34a">✅ Database Setup Complete!</h1>
@@ -139,7 +145,7 @@ router.get('/', async (req, res) => {
         <li>✅ categories table (5 categories)</li>
         <li>✅ products table (8 products)</li>
         <li>✅ cart_items table</li>
-        <li>✅ orders table</li>
+        <li>✅ orders table (with payment columns)</li>
         <li>✅ order_items table</li>
       </ul>
       <p><strong>Demo accounts:</strong></p>
@@ -159,17 +165,19 @@ router.get('/', async (req, res) => {
 // Fix broken product images
 router.get('/fix-images', async (req, res) => {
   try {
-    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600&q=80' WHERE name='Silicone Bib Set (3-pack)'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1612533752748-e8bf9efafdf2?w=600&q=80' WHERE name='Silicone Bib Set (3-pack)'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=600&q=80' WHERE name='Anti-Colic Feeding Bottle'`);
-    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=600&q=80' WHERE name='Bamboo Sleep Sack'`);
-    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80' WHERE name='Organic Cotton Onesie'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1519689680058-324335c77eba?w=600&q=80' WHERE name='Bamboo Sleep Sack'`);
+    await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1522771930-78848d9293e8?w=600&q=80' WHERE name='Organic Cotton Onesie'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1545558014-8692077e9b5c?w=600&q=80' WHERE name='Sensory Activity Cube'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=600&q=80' WHERE name='Wooden Stacking Rings'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1555252333-9f8e92e65df9?w=600&q=80' WHERE name='Baby Monitor Pro'`);
     await db.query(`UPDATE products SET image_url='https://images.unsplash.com/photo-1584515933487-779824d29309?w=600&q=80' WHERE name='Digital Ear Thermometer'`);
-    res.send('<h1 style="color:green">✅ Images fixed! <a href="/">Go to App</a></h1>');
+    res.send('<h1 style="color:green;font-family:sans-serif;padding:40px">✅ Images fixed! <a href="/">Go to App →</a></h1>');
   } catch(e) {
     res.status(500).send(`<pre style="color:red">${e.message}</pre>`);
   }
 });
 
+
+module.exports = router;
